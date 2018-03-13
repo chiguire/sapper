@@ -1,13 +1,95 @@
 LK12;OSData;DiskOS;DiskGame;V3;192x128;C:none;CLvl:0;
 ___luacode___
+--constants
+CELL = 8
+MAP_W = 11
+MAP_H = 10
+LEFT,RIGHT,UP,DOWN = 1,2,4,8
+
+Char = class("Char")
+
+function Char:initialize(tX,tY,spr)
+  self.tX,self.tY = tX,tY
+  self.x,self.y = tX*CELL,tY*CELL
+  self.dir = 1
+  self.speed = 1
+  self.spr = spr
+end
+
+function Char:move()
+ self.x = self.x+self.speed*
+  sg(self.tX*CELL - self.x)
+ self.y = self.y+self.speed*
+  sg(self.tY*CELL - self.y) 
+end
+
+function Char:draw()
+ Sprite(self.spr,self.x,self.y)
+end
+
+function Char:update()
+ if not press(3) and not press(4) then
+  if press(1) and not press(2) then
+   self.tX = self.tX - 1
+   self.dir = 1
+  elseif press(2) and not press(1) then
+   self.tX = self.tX + 1
+   self.dir = 2
+  end
+ end
+ 
+ if not press(1) and not press(2) then
+  if press(3) and not press(4) then
+   self.tY = self.tY - 1
+   self.dir = 3
+  elseif press(4) and not press(3) then
+   self.tY = self.tY + 1
+   self.dir = 4
+  end
+ end
+ 
+ self:move()
+end
+
+Game = {
+ player = Char:new(6,5,1)
+}
+
+function Game:draw()
+ map(0,0,0,0, MAP_W,MAP_H)
+ self.player:draw()
+end
+
+function Game:update(dt)
+ self.player:update()
+end
+
+-- util functions 
+
+function sg(x)
+ return x > 0 and 1 or (x < 0 and -1
+  or 0)
+end 
+
+function press(index)
+ local bool,isrepeat = btnp(index)
+ 
+ return bool and not isrepeat
+end
+   
+-- mains
+
 function _init()
+ -- game init
  clear(0)
- map(0,0,0,0,11,10)
 end
 
 function _draw()
- map(0,0,0,0,11,10)
- Sprite(1,8*4,8*8)
+ Game:draw()
+end
+
+function _update(dt)
+ Game:update(dt)
 end
 ___spritesheet___
 LK12;GPUIMG;192x128;
