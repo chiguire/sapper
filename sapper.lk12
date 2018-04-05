@@ -9,21 +9,22 @@ LANES_START_AT = 4
 LANES = 4
 CARS = {
  {
-  sprs = {10},
-  spd = 1
+  sprites = {10},
+  speed = 0.1
  },
  {
-  sprs = {11,12},
-  spd = 0.5
+  sprites = {11,12},
+  speed = 0.1
  }
 }
 
 Car = class("Car")
 
-function Car:initialize(tX, tY, sprs)
+function Car:initialize(tX, tY, sprs, spd)
  self.tX,self.tY = tX,tY
  self.x,self.y = tX*CELL,tY*CELL
- self.speed = -0.5
+ self.w,self.h = #sprs*CELL,CELL
+ self.speed = -spd
  self.sprs = sprs
 end
 
@@ -45,14 +46,20 @@ function Car:draw()
  end
 end
 
+function Car:collideResponse(other)
+ -- cars are almighty here
+end
+
 Char = class("Char")
 
 function Char:initialize(tX,tY,spr)
  self.tX,self.tY = tX,tY
  self.x,self.y = tX*CELL,tY*CELL
+ self.w,self.h = CELL,CELL
  self.dir = 1
  self.speed = 1
  self.spr = spr
+ self.dead = false
 end
 
 function Char:move()
@@ -67,6 +74,8 @@ function Char:draw()
 end
 
 function Char:update()
+ if self.dead then return end
+ 
  if not press(3) and not press(4) then
   if press(1) and not press(2) then
    self.tX = self.tX - 1
@@ -90,6 +99,10 @@ function Char:update()
  self:move()
 end
 
+function Char:collideResponse(c)
+ self.dead = true
+end
+
 Game = {}
 
 function Game:init()
@@ -102,8 +115,8 @@ function Game:init()
  car = randomCar()
  self:pushCar(
   car.lane, 
-  car.sprs, 
-  car.spd
+  car.sprites, 
+  car.speed
  )
 end
 
@@ -123,6 +136,13 @@ function Game:draw()
  for i=1,#self.cars do
   self.cars[i]:draw()
  end
+ 
+ --cond_x = collide_x(self.player,self.cars[1]) and "1" or "0"
+ --cond_y = collide_y(self.player,self.cars[1]) and "1" or "0"
+  
+ --print("CLL: X("..cond_x.."),Y("..cond_y..")", 10, 90)
+ --print("P:("..self.player.x..","..self.player.y..")", 10, 100)
+ --print("C:("..self.cars[1].x..","..self.cars[1].y..")", 10, 110)
 end
 
 function Game:update(dt)
@@ -130,16 +150,46 @@ function Game:update(dt)
  for i=1,#self.cars do
   self.cars[i]:update()
  end
+ 
+ for i=1,#self.cars do
+  collide(self.player,self.cars[i])
+ end
 end
 
 -- util functions 
+function collide_x(a,b)
+ if a.x <= b.x then
+  return math.abs(a.x-b.x) < a.w
+ else
+  return math.abs(a.x-b.x) < b.w
+ end
+end
+
+function collide_y(a,b)
+ if a.y <= b.y then
+  return math.abs(a.y-b.y) < a.h
+ else
+  return math.abs(a.y-b.y) < b.h
+ end
+end
+
+function collide(a, b)
+ if collide_x(a,b) and
+    collide_y(a,b) then
+  a:collideResponse(b)
+  b:collideResponse(a)
+  return true
+ else
+  return false
+ end
+end
 
 function randomCar()
  car = CARS[math.random(#CARS)]
  return {
   lane = math.random(LANES),
-  sprs = car.sprs,
-  spd = car.spd
+  sprites = car.sprites,
+  speed = car.speed
  }
 end
 
