@@ -7,16 +7,50 @@ MAP_H = 10
 UP,RIGHT,DOWN,LEFT,DEAD = 1,2,3,4,5
 LANES_START_AT = 4
 LANES = 4
+WOOD_SPR = 13
+
 CARS = {
  {
   sprites = {10},
-  speed = 0.1
+  speed = 0.2
  },
  {
   sprites = {11,12},
   speed = 0.1
  }
 }
+
+Wood = class("Wood")
+
+function Wood:initialize(x, tY, length, spd)
+ self.tX,self.tY = x/CELL, tY
+ self.x,self.y = x, tY*CELL
+ self.w,self.h = length*CELL,CELL
+ self.speed = -spd
+ self.length = length
+end
+
+function Wood:update()
+ self:move()
+ 
+ if self:isOutOfScreen() then
+  self.x = MAP_W*CELL
+ end
+end
+
+function Wood:move()
+ self.x = self.x + self.speed
+end
+
+function Wood:isOutOfScreen()
+ return self.x < -self.length*CELL
+end
+
+function Wood:draw()
+ for i=1,self.length do
+  Sprite(WOOD_SPR,self.x+(i-1)*CELL,self.y)
+ end
+end
 
 Car = class("Car")
 
@@ -135,6 +169,13 @@ function Game:init()
    cars[i].position
   )
  end
+ self.woods = {}
+ self:pushWood(
+  1,
+  2,
+  0.1,
+  100
+ )
  self.gameOverTimer = 0
 end
 
@@ -148,8 +189,21 @@ function Game:pushCar(lane, sprs, spd, pos)
  table.insert(self.cars, newCar)
 end
 
+function Game:pushWood(lane, length, spd, pos)
+ newWood = Wood:new(
+  pos,
+  lane,
+  length,
+  spd
+ )
+ table.insert(self.woods, newWood)
+end
+
 function Game:draw()
  map(0,0,0,0, MAP_W,MAP_H)
+ for i=1,#self.woods do
+  self.woods[i]:draw()
+ end
  self.player:draw()
  for i=1,#self.cars do
   self.cars[i]:draw()
@@ -165,8 +219,13 @@ end
 
 function Game:update(dt)
  self.player:update()
+
  for i=1,#self.cars do
   self.cars[i]:update()
+ end
+
+ for i=1,#self.woods do
+  self.woods[i]:update()
  end
  
  for i=1,#self.cars do
