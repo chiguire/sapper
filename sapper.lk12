@@ -154,6 +154,7 @@ end
 Game = {}
 
 function Game:init()
+ clip(0,0,MAP_W*CELL,MAP_H*CELL)
  self.player = Char:new(
   5,
   MAP_H - 1,
