@@ -13,6 +13,9 @@ DEATH_ANIM = {30,54,78,
  79,80,81,82,
  79,80,81,82
 }
+WATER_LANES_START_AT=1
+WATER_LANES=3
+NUM_WOODS_PER_LANE=3
 
 CARS = {
  {
@@ -263,24 +266,15 @@ function Game:init()
   )
  end
  self.woods = {}
- self:pushWood(
-  1,
-  2,
-  0.1,
-  100
- )
- self:pushWood(
-  2,
-  3,
-  0.1,
-  100
- )
- self:pushWood(
-  3,
-  2,
-  0.1,
-  100
- )
+ woods = randomWoods()
+ for i=1,#woods do
+  self:pushWood(
+   woods[i].lane,
+   woods[i].length,
+   woods[i].speed,
+   woods[i].pos
+  )
+ end
  self.gameOverTimer = 0
  self.debugText = ""
 end
@@ -328,15 +322,12 @@ function Game:update(dt)
  for i=1,#self.cars do
   self.cars[i]:update()
  end
-
  for i=1,#self.woods do
   self.woods[i]:update()
  end
-        
  for i=1,#self.cars do
   collide(self.player,self.cars[i])
  end
- 
  for i=1,#self.woods do
   collide(self.player,self.woods[i])
  end
@@ -401,6 +392,27 @@ function randomCars(lanes)
   })
  end
  return cars
+end
+
+function randomWoods()
+ woods = {}
+ for i=WATER_LANES_START_AT,
+  WATER_LANES_START_AT+WATER_LANES-1 do
+  ln = i
+  for j=1,NUM_WOODS_PER_LANE do
+   lg = math.random(2)
+   s = 0.05*(4-ln)
+   p = math.floor(j*MAP_W/NUM_WOODS_PER_LANE)
+    *CELL
+   table.insert(woods, {
+    lane = ln,
+    length = lg,
+    speed = s,
+    pos = p
+   })
+  end
+ end
+ return woods
 end
 
 function sg(x)
