@@ -3,7 +3,7 @@ Sapper
 
 [![MIT Licence](https://badges.frapsoft.com/os/mit/mit.png?v=103)](https://opensource.org/licenses/mit-license.php)
 
-![Sapper screenshot (WIP)](img/screen.png)
+![Sapper screenshot](img/animation.gif)
 
 Sapper is a LIKO-12 game disk that recreates an old friendly game.
 
