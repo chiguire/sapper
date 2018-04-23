@@ -16,6 +16,8 @@ DEATH_ANIM = {30,54,78,
 WATER_LANES_START_AT=1
 WATER_LANES=3
 NUM_WOODS_PER_LANE=3
+HOME_FREE_TILE=8
+HOME_OCCUPIED_TILE=9
 
 CARS = {
  {
@@ -110,8 +112,10 @@ function Char:initialize(tX,tY,spr)
  self.speed = 1
  self.spr = spr
  self.dead = false
+ self.happy = false
  self.arrived = false
  self.woodCollision = false
+ self.woodCollisionSpeed = 0
  self.deathAnim = Anim:new(
   10,
   DEATH_ANIM,
@@ -135,6 +139,10 @@ function Char:move()
 end
 
 function Char:draw()
+ if self.happy then
+  return -- don't draw
+ end
+ 
  if self.dead then
   if self:onWater() then
    self.deathAnim:draw(self.x,self.y)
@@ -172,10 +180,17 @@ function Char:update()
  
  if not self.moved and
     not press(1) and not press(2) then
-  if press(3) and not press(4) and
-    self.tY > 0 then
-   self.tY = self.tY - 1
-   self.dir = UP
+  if press(3) and not press(4) then
+   if self.tY > 1 then
+    self.tY = self.tY - 1
+    self.dir = UP
+   else
+    if self.tX % 2 == 1 and
+       mget(self.tX,self.tY-1) == HOME_FREE_TILE then
+     self.tY = self.tY - 1
+     self.dir = UP
+    end
+   end
   elseif press(4) and not press(3) and
     self.tY < MAP_H - 1 then
    self.tY = self.tY + 1
@@ -183,6 +198,13 @@ function Char:update()
   end
  end
 
+ if self:onHome() then
+  self.happy = true
+  mset(self.tX,self.tY,HOME_OCCUPIED_TILE)
+  Game:triggerGameOver()
+  return
+ end
+ 
  if self:onWater() and
     not self.woodCollision and
     self.tX*CELL == self.x and
@@ -203,11 +225,16 @@ function Char:collideResponse(c)
  
  if c.class.name == "Wood" then
   self.woodCollision = true
+  self.woodCollisionSpeed = c.speed
  end
 end
 
 function Char:tileStanding()
  return mget(self.tX,self.tY)
+end
+
+function Char:onHome()
+ return self:tileStanding() == HOME_FREE_TILE
 end
 
 function Char:onWater()
@@ -249,7 +276,7 @@ end
 Game = {}
 
 function Game:init()
- --clip(0,0,MAP_W*CELL,MAP_H*CELL+30)
+ clip(0,0,MAP_W*CELL,MAP_H*CELL+30)
  self.player = Char:new(
   5,
   MAP_H - 1,
@@ -277,6 +304,7 @@ function Game:init()
  end
  self.gameOverTimer = 0
  self.debugText = ""
+ self.gameWon = self:hasWonGame()
 end
 
 function Game:pushCar(lane, sprs, spd, pos)
@@ -299,17 +327,32 @@ function Game:pushWood(lane, length, spd, pos)
  table.insert(self.woods, newWood)
 end
 
+function Game:hasWonGame()
+ homes = {1,3,5,7,9}
+ for i=1,#homes do
+  if mget(homes[i],0) == HOME_FREE_TILE then
+   return false
+  end
+ end
+ return true
+end
+
 function Game:draw()
- map(0,0,0,0, MAP_W,MAP_H)
- for i=1,#self.woods do
-  self.woods[i]:draw()
- end
- self.player:draw()
- for i=1,#self.cars do
-  self.cars[i]:draw()
- end
+ if not self.gameWon then
+  map(0,0,0,0, MAP_W,MAP_H)
+  for i=1,#self.woods do
+   self.woods[i]:draw()
+  end
+  self.player:draw()
+  for i=1,#self.cars do
+   self.cars[i]:draw()
+  end
  
- print(self.debugText, 2, MAP_W *CELL+2, screenWidth()-4)
+  print(self.debugText, 2, MAP_W *CELL+2, screenWidth()-4)
+ else
+  clear(0)
+  print("YOU WON!", 30, 30)
+ end
  --cond_x = collide_x(self.player,self.cars[1]) and "1" or "0"
  --cond_y = collide_y(self.player,self.cars[1]) and "1" or "0"
   
@@ -319,33 +362,38 @@ function Game:draw()
 end
 
 function Game:update(dt)
- for i=1,#self.cars do
-  self.cars[i]:update()
- end
- for i=1,#self.woods do
-  self.woods[i]:update()
- end
- for i=1,#self.cars do
-  collide(self.player,self.cars[i])
- end
- for i=1,#self.woods do
-  collide(self.player,self.woods[i])
- end
- 
- self.player:update()
-
- if self.gameOverTimer > 1 then
-  self.gameOverTimer = 
-   self.gameOverTimer - 1
-  if self.gameOverTimer == 1 then
-   self:init()
+ if not self.gameWon then
+  for i=1,#self.cars do
+   self.cars[i]:update()
   end
- end
+  for i=1,#self.woods do
+   self.woods[i]:update()
+  end
+  for i=1,#self.cars do
+   collide(self.player,self.cars[i])
+  end
+  for i=1,#self.woods do
+   collide(self.player,self.woods[i])
+  end
+  
+  self.player:update()
+
+  if self.gameOverTimer > 1 then
+   self.gameOverTimer = 
+    self.gameOverTimer - 1
+   if self.gameOverTimer == 1 then
+    self:init()
+   end
+  end
  
- self.debugText="On water:"..
-  (self.player:onWater() and 1 or 0)..
-  "/Wood col: "..
-  (self.player.woodCollision and 1 or 0)
+  --self.debugText = "tY "..self.player.tY
+ else
+  -- nothing to do here :-)
+ end
+ --self.debugText="On water:"..
+ -- (self.player:onWater() and 1 or 0)..
+ -- "/Wood col: "..
+ -- (self.player.woodCollision and 1 or 0)
 end
 
 function Game:triggerGameOver()
