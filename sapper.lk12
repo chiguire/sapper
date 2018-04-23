@@ -57,6 +57,10 @@ function Wood:draw()
  end
 end
 
+function Wood:collideResponse(other)
+ -- woods are almighty here
+end
+ 
 Car = class("Car")
 
 function Car:initialize(x, tY, sprs, spd)
@@ -174,8 +178,6 @@ function Char:update()
    self.tY = self.tY + 1
    self.dir = DOWN
   end
-  
-  self.woodCollision = false
  end
 
  if self:onWater() and
@@ -185,7 +187,9 @@ function Char:update()
   self.dead = true
   Game:triggerGameOver()
   return
- end                   
+ end
+ 
+ self.woodCollision = false
 end
 
 function Char:collideResponse(c)
@@ -332,7 +336,11 @@ function Game:update(dt)
  for i=1,#self.cars do
   collide(self.player,self.cars[i])
  end
-    
+ 
+ for i=1,#self.woods do
+  collide(self.player,self.woods[i])
+ end
+ 
  self.player:update()
 
  if self.gameOverTimer > 1 then
@@ -342,6 +350,11 @@ function Game:update(dt)
    self:init()
   end
  end
+ 
+ self.debugText="On water:"..
+  (self.player:onWater() and 1 or 0)..
+  "/Wood col: "..
+  (self.player.woodCollision and 1 or 0)
 end
 
 function Game:triggerGameOver()
